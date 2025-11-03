@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoShare - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .post-image {
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        @media (min-width: 640px) {
+            .post-image {
+                max-height: 600px;
+                object-fit: contain;
+            }
+        }
+
+        .like-button.liked svg {
+            fill: #ec4899;
+            stroke: #ec4899;
+        }
+    </style>
+
+    <style>
+        .content-section {
+            min-height: calc(100vh - 64px);
+        }
+
+        .friends-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            max-height: 400px;
+            min-height: 250px;
+            overflow-y: auto;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            z-index: 50;
+        }
+    </style>
+    <style>
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-width: 500px;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="bg-white shadow-md">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/home" class="flex-shrink-0 flex items-center">
+                        <span class="text-xl font-bold text-pink-600">PhotoShare</span>
+                    </a>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <button id="homeBtn"
+                        class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-100 transition duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        <span class="hidden md:inline ml-1">Home</span>
+                    </button>
+
+                    <button id="friendsBtn"
+                        class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-100 transition duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span class="hidden md:inline ml-1">Friends</span>
+                    </button>
+
+                    <a href="/myprofile" id="profileBtn"
+                        class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-pink-600 hover:bg-gray-100 transition duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span class="hidden md:inline ml-1">Profile</span>
+                    </a>
+
+                    <button id="signoutBtn"
+                        class="px-3 py-2 rounded-md text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 transition duration-150">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span class="hidden md:inline ml-1">Sign Out</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main class="max-w-xl mx-auto px-4 py-6">
+        <div id="loadingState" class="space-y-8">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="p-4 border-b">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full shimmer"></div>
+                        <div class="ml-3">
+                            <div class="h-4 w-24 shimmer"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="aspect-square shimmer"></div>
+                <div class="p-4">
+                    <div class="h-4 w-full shimmer mb-2"></div>
+                    <div class="h-4 w-3/4 shimmer"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="p-4 border-b">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full shimmer"></div>
+                        <div class="ml-3">
+                            <div class="h-4 w-24 shimmer"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="aspect-square shimmer"></div>
+                <div class="p-4">
+                    <div class="h-4 w-full shimmer mb-2"></div>
+                    <div class="h-4 w-3/4 shimmer"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="postsFeed" class="space-y-8 hidden">
+        </div>
+
+        <div id="emptyState" class="bg-white rounded-lg shadow-md p-8 text-center hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none"
+                viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <h2 class="mt-4 text-xl font-bold text-gray-800">No posts yet</h2>
+            <p class="mt-2 text-gray-600">Follow some users to see their posts here.</p>
+            <a href="#"
+                class="mt-4 inline-block px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 transition duration-150">
+                Find People to Follow
+            </a>
+        </div>
+    </main>
+
+
+    <div id="friendsModal" class="friends-modal">
+        <div class="p-4">
+            <div class="mb-4">
+                <!-- <h3 class="text-lg font-semibold text-gray-800">Find Friends</h3> -->
+                <div class="flex justify-between">
+
+                    <h3 class="text-lg font-semibold text-gray-800">Find Friends</h3>
+                    <h3 class="cursor-pointer text-red-500" id="closeSearchForm">X</h3>
+                </div>
+                <div class="mt-2 relative">
+                    <input type="text" id="friendSearch" placeholder="Search by name..."
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute right-3 top-2.5 text-gray-400"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+
+            <div id="searchResults" class="space-y-2">
+                <div class="text-sm text-gray-500">Search for friends...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profileEditModal" class="modal-overlay">
+        <div class="modal-content mx-4">
+            <div class="bg-gradient-to-r from-purple-600 to-pink-600 py-4 px-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-white">Edit Your Profile</h3>
+                    <button id="closeModalBtn" class="text-white hover:text-gray-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="profileEditForm" class="p-6">
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="profileName" class="block text-sm font-medium text-gray-700 mb-1">Profile
+                            Name</label>
+                        <input type="text" id="profileName" name="profileName"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+                            placeholder="Your display name" required>
+                    </div>
+
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                        <div class="flex">
+                            <span
+                                class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                @
+                            </span>
+                            <input type="text" id="username" name="username"
+                                class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+                                placeholder="username" required>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">This will be your unique identifier.</p>
+                    </div>
+
+                    <div>
+                        <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                        <textarea id="bio" name="bio" rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500"
+                            placeholder="Tell us about yourself"></textarea>
+                        <p class="mt-1 text-xs text-gray-500"><span id="bioCharCount">150</span>/150 characters
+                            remaining</p>
+                    </div>
+                    </fo>
+
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" id="cancelBtn"
+                            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                            Cancel
+                        </button>
+                        <button id="saveChangesButton" onclick="handleSubmit()"
+                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Global variables
+        let currentUserData = null;
+        let loggedInUsername = '';
+        let loggedInUserEmail = '';
+        let posts = [];
+        const profileEditModal = document.getElementById('profileEditModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const profileEditForm = document.getElementById('profileEditForm');
+        const bioTextarea = document.getElementById('bio');
+        const bioCharCount = document.getElementById('bioCharCount');
+        // JWT and session handling functions
+        function parseJWT(jwtToken) {
+            try {
+                const base64Payload = jwtToken.split('.')[1];
+                return JSON.parse(atob(base64Payload));
+            } catch (err) {
+                return {};
+            }
+        }
+
+        function extractTokenFromCookies(cookies) {
+            return cookies
+                .split(';')
+                .map(cookie => cookie.trim().split('='))
+                .find(([key]) => key === 'token')?.[1] || "";
+        }
+
+
+        async function initializeuser(userEmail) {
+            const details_of_user = await fetch(`/api/initializeuser`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }
+                , body: JSON.stringify({ 'email': userEmail })
+            })
+
+        }
+
+
+        async function verifyUserSession() {
+            const authToken = extractTokenFromCookies(document.cookie);
+            if (!authToken) {
+                window.location.href = "/";
+                return false;
+            }
+            const userData = parseJWT(authToken);
+            loggedInUserEmail = userData.email || "";
+            initializeuser(loggedInUserEmail)
+
+            return true;
+        }
+
+
+        function renderSearchResults(results) {
+            const searchResultsContainer = document.getElementById('searchResults');
+            console.log("results ", results)
+            if (results.length === 0) {
+                searchResultsContainer.innerHTML = '<div class="text-sm text-gray-500">No users found</div>';
+                return;
+            }
+
+            let html = '';
+            results.forEach(user => {
+                html += `
+                <div class="user-item p-2 hover:bg-gray-100 rounded cursor-pointer" data-username="${user.Username}">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 mr-3 flex-shrink-0"></div>
+                        <div>
+                            <div class="font-medium text-gray-800">${user.UserProfileName}</div>
+                            <div class="text-xs text-gray-500">@${user.Username}</div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+
+            searchResultsContainer.innerHTML = html;
+
+            document.querySelectorAll('.user-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const username = item.getAttribute('data-username');
+                    window.location.href = `/user/${username}`;
+                });
+            });
+        }
+
+        async function fetchAllUsers() {
+            try {
+                const response = await fetch('/api/users');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch users');
+                }
+
+                const allUsersJson = await response.json();
+                allUsers = allUsersJson.users
+            } catch (error) {
+                console.error("Error fetching users:", error);
+                allUsers = [];
+            }
+        }
+
+        function filterUsers(searchTerm) {
+            if (!searchTerm) return [];
+            console.log("search terms ", searchTerm)
+
+            searchTerm = searchTerm.toLowerCase();
+            return allUsers.filter(user =>
+                user.UserProfileName.toLowerCase().includes(searchTerm)
+            );
+        }
+
+
+        async function fetchUserDetails() {
+            try {
+                const response = await fetch(`/api/detailsofuser/${loggedInUserEmail}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user details');
+                }
+
+                const userData = await response.json();
+                currentUserData = userData.user
+                console.log("cuurent user data ", currentUserData)
+                if (currentUserData.Username == '') {
+                    openModal()
+
+                }
+                fetchFeedPosts()
+
+                return userData;
+            } catch (error) {
+                console.error("Error fetching user details:", error);
+                return null;
+            }
+        }
+
+        async function fetchFeedPosts() {
+            console.log("inside fetch posts ", currentUserData)
+            try {
+                const response = await fetch('/api/feed', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: currentUserData?.Username,
+                    }),
+                });
+
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch feed posts');
+                }
+
+                const postsData = await response.json();
+                console.log("postsData ", postsData)
+                await updatePostsFeedUI(postsData);
+                return postsData;
+            } catch (error) {
+                console.error("Error fetching feed posts:", error);
+                return [];
+            }
+        }
+
+        async function getImageUrl(filename) {
+            try {
+                console.log("filename ", filename)
+                const formData = new FormData();
+                formData.append('filename', filename);
+
+                const response = await fetch('/download-file', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to download image');
+                }
+
+                const blob = await response.blob();
+                return URL.createObjectURL(blob);
+            } catch (error) {
+                console.error("Error downloading image:", error);
+                return null;
+            }
+        }
+
+        async function addComment(postId, comment) {
+            try {
+
+                console.log("currentUserData ", currentUserData)
+                const response = await fetch('/api/commentAPost', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        comment: {
+                            email: currentUserData.Username,
+                            text: comment,
+                            timestamp: new Date().toISOString(),
+                            activePostId: postId,
+                        }
+                    }),
+                });
+
+
+                if (!response.ok) {
+                    throw new Error('Failed to add comment');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error("Error adding comment:", error);
+                return null;
+            }
+        }
+
+        async function toggleLike(postId) {
+            try {
+                const response = await fetch('/api/like', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        post_id: postId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to toggle like');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error("Error toggling like:", error);
+                return null;
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffSecs = Math.floor(diffMs / 1000);
+            const diffMins = Math.floor(diffSecs / 60);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffSecs < 60) {
+                return 'just now';
+            } else if (diffMins < 60) {
+                return `${diffMins}m ago`;
+            } else if (diffHours < 24) {
+                return `${diffHours}h ago`;
+            } else if (diffDays < 7) {
+                return `${diffDays}d ago`;
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+
+        async function createPostElement(post) {
+            const postElement = document.createElement('article');
+            postElement.className = 'bg-white rounded-lg shadow-md overflow-hidden';
+            postElement.id = `post-${post.id}`;
+
+            const initials = post.Username.substring(0, 2).toUpperCase();
+
+            const postHeader = document.createElement('div');
+            postHeader.className = 'p-4 border-b';
+            postHeader.innerHTML = `
+                <div class="flex items-center">
+                    <a href="/profile/${post.Username}" class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+                            ${initials}
+                        </div>
+                        <div class="ml-3">
+                            <span class="font-semibold text-gray-900">${post.Username}</span>
+                        </div>
+                    </a>
+                </div>
+            `;
+
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'relative bg-gray-100';
+
+            const loadingPlaceholder = document.createElement('div');
+            loadingPlaceholder.className = 'absolute inset-0 flex items-center justify-center bg-gray-200';
+            loadingPlaceholder.innerHTML = `
+                <svg class="animate-spin h-10 w-10 text-pink-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            `;
+            imageContainer.appendChild(loadingPlaceholder);
+
+            const imageUrl = await getImageUrl(post.media_file);
+            if (imageUrl) {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = `Post by ${post.Username}`;
+                img.className = 'post-image';
+                img.onload = () => {
+                    loadingPlaceholder.remove();
+                };
+                imageContainer.appendChild(img);
+            } else {
+                loadingPlaceholder.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="mt-2 text-gray-500">Image not available</p>
+                `;
+            }
+
+            const postActions = document.createElement('div');
+            postActions.className = 'p-4 border-b';
+            postActions.innerHTML = `
+                <div class="flex items-center space-x-4">
+                
+                    <button class="comment-button flex items-center text-gray-500 hover:text-blue-600 focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span class="ml-1 comment-count">${post.user_comments ? post.user_comments.length : 0}</span>
+                    </button>
+                    <span class="ml-auto text-sm text-gray-500">${formatDate(post.Date)}</span>
+                </div>
+            `;
+
+            const postContent = document.createElement('div');
+            postContent.className = 'p-4';
+            postContent.innerHTML = `
+                <div>
+                    <span class="font-semibold">${post.Username}</span>
+                    <span class="text-gray-800">${post.caption || ''}</span>
+                </div>
+            `;
+
+            const commentsSection = document.createElement('div');
+            commentsSection.className = 'px-4 pb-2';
+            const commentsContainer = document.createElement('div');
+            commentsContainer.className = 'space-y-2 mb-3';
+            commentsContainer.id = `comments-${post.id}`;
+
+            if (post.user_comments && post.user_comments.length > 0) {
+                const sortedComments = [...post.user_comments].sort((a, b) => new Date(b.time) - new Date(a.time));
+
+                const showAll = sortedComments.length <= 5;
+                const displayComments = showAll ? sortedComments : sortedComments.slice(0, 5);
+
+                displayComments.forEach(comment => {
+                    const commentElement = document.createElement('div');
+                    commentElement.className = 'text-sm';
+                    commentElement.innerHTML = `
+                        <span class="font-semibold">${comment.username}</span>
+                        <span class="text-gray-800">${comment.comment}</span>
+                        <div class="text-xs text-gray-500">${formatDate(comment.time)}</div>
+                    `;
+                    commentsContainer.appendChild(commentElement);
+                });
+
+                if (!showAll) {
+                    const showMoreButton = document.createElement('button');
+                    showMoreButton.className = 'text-sm text-gray-500 hover:text-gray-700 mt-2';
+                    showMoreButton.textContent = 'Show more comments';
+                    showMoreButton.onclick = () => {
+                        commentsContainer.innerHTML = '';
+
+                        sortedComments.forEach(comment => {
+                            console.log("comment ", comment)
+                            const commentElement = document.createElement('div');
+                            commentElement.className = 'text-sm';
+                            commentElement.innerHTML = `
+                                <span class="font-semibold">${comment.username}</span>
+                                <span class="text-gray-800">${comment.comment}</span>
+                                <div class="text-xs text-gray-500">${formatDate(comment.time)}</div>
+                            `;
+                            commentsContainer.appendChild(commentElement);
+                        });
+
+                        showMoreButton.remove();
+                    };
+                    commentsSection.appendChild(showMoreButton);
+                }
+            } else {
+                const noCommentsElement = document.createElement('div');
+                noCommentsElement.className = 'text-sm text-gray-500';
+                noCommentsElement.textContent = 'No comments yet';
+                commentsContainer.appendChild(noCommentsElement);
+            }
+
+            const commentForm = document.createElement('form');
+            commentForm.className = 'mt-3 border-t pt-3';
+            commentForm.innerHTML = `
+                <div class="flex items-start">
+                    <input type="text" class="comment-input flex-grow px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-pink-500 focus:border-pink-500" placeholder="Add a comment..." maxlength="200">
+                    <button type="submit" class="px-4 py-2 bg-pink-600 text-white rounded-r-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500">
+                        Post
+                    </button>
+                </div>
+                <div class="text-xs text-right text-gray-500 mt-1">
+                    <span class="comment-char-count">0</span>/200 characters
+                </div>
+            `;
+
+            commentForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const commentInput = commentForm.querySelector('.comment-input');
+                const comment = commentInput.value.trim();
+
+                if (!comment) {
+                    return;
+                }
+
+                try {
+                    const submitButton = commentForm.querySelector('button[type="submit"]');
+                    submitButton.disabled = true;
+
+                    const result = await addComment(post.id, comment);
+
+                    if (result) {
+                        const newComment = {
+                            username: currentUserData.Username,
+                            comment: comment,
+                            time: new Date().toISOString()
+                        };
+
+                        fetchFeedPosts();
+
+
+                    }
+
+                } catch (error) {
+                    console.error('Error adding comment:', error);
+                    alert('Failed to add comment. Please try again.');
+                } finally {
+                    submitButton.disabled = false;
+                }
+            });
+
+            const commentInput = commentForm.querySelector('.comment-input');
+            const commentCharCount = commentForm.querySelector('.comment-char-count');
+
+            commentInput.addEventListener('input', () => {
+                const count = commentInput.value.length;
+                commentCharCount.textContent = count;
+
+                if (count > 200) {
+                    commentCharCount.classList.add('text-red-500');
+                } else {
+                    commentCharCount.classList.remove('text-red-500');
+                }
+            });
+
+            postElement.appendChild(postHeader);
+            postElement.appendChild(imageContainer);
+            postElement.appendChild(postActions);
+            postElement.appendChild(postContent);
+            commentsSection.insertBefore(commentsContainer, commentsSection.firstChild);
+            postElement.appendChild(commentsSection);
+            postElement.appendChild(commentForm);
+
+            return postElement;
+        }
+
+        async function updatePostsFeedUI(posts) {
+            const postsFeed = document.getElementById('postsFeed');
+            const emptyState = document.getElementById('emptyState');
+            const loadingState = document.getElementById('loadingState');
+
+            if (!posts || posts.length === 0) {
+                postsFeed.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                return;
+            }
+
+            posts.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+            postsFeed.innerHTML = '';
+
+            for (const post of posts) {
+                const postElement = await createPostElement(post);
+                postsFeed.appendChild(postElement);
+            }
+
+            const likeButtons = document.querySelectorAll('.like-button');
+            likeButtons.forEach(button => {
+                button.addEventListener('click', async function () {
+                    const postId = this.dataset.postId;
+
+                    this.classList.toggle('liked');
+                    const likeCount = this.querySelector('.like-count');
+                    const currentCount = parseInt(likeCount.textContent);
+
+                    if (this.classList.contains('liked')) {
+                        likeCount.textContent = currentCount + 1;
+                    } else {
+                        likeCount.textContent = Math.max(0, currentCount - 1);
+                    }
+
+                    try {
+                        await toggleLike(postId);
+                    } catch (error) {
+                        console.error('Error toggling like:', error);
+
+                        this.classList.toggle('liked');
+                        if (this.classList.contains('liked')) {
+                            likeCount.textContent = currentCount + 1;
+                        } else {
+                            likeCount.textContent = Math.max(0, currentCount - 1);
+                        }
+                    }
+                });
+            });
+
+            postsFeed.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            loadingState.classList.add('hidden');
+        }
+
+        async function initPage() {
+            const isLoggedIn = await verifyUserSession();
+            if (!isLoggedIn) {
+                return;
+            }
+            fetchAllUsers()
+
+            const friendsBtn = document.getElementById('friendsBtn');
+            const friendsModal = document.getElementById('friendsModal');
+            const friendSearch = document.getElementById('friendSearch');
+            const homeBtn = document.getElementById('homeBtn');
+            const signoutBtn = document.getElementById('signoutBtn');
+            const closeSearchForm = document.getElementById('closeSearchForm')
+
+
+            friendsBtn.addEventListener('click', () => {
+                console.log("button clicked")
+                friendsModal.style.display = 'block'
+            });
+
+
+            closeSearchForm.addEventListener('click', (event) => {
+
+                friendsModal.style.display = 'none'
+
+            });
+            document.addEventListener('click', (event) => {
+                if (!friendsModal.contains(event.target) && event.target !== friendsBtn) {
+                    friendsModal.classList.remove('show');
+                }
+            });
+
+            friendSearch.addEventListener('input', (e) => {
+                const searchTerm = e.target.value;
+                const results = filterUsers(searchTerm);
+                renderSearchResults(results);
+            });
+
+            homeBtn.addEventListener('click', () => {
+                window.location.href = '/home';
+            });
+
+            signoutBtn.addEventListener('click', () => {
+                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                window.location.href = '/';
+            });
+
+            try {
+                const [userData] = await Promise.all([
+                    fetchUserDetails(),
+                ]);
+
+                if (userData) {
+
+
+                }
+
+            } catch (error) {
+                console.error('Error initializing page:', error);
+
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('postsFeed').classList.add('hidden');
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('emptyState').innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 class="mt-4 text-xl font-bold text-gray-800">Error loading feed</h2>
+                    <p class="mt-2 text-gray-600">Please try again later.</p>
+                    <button id="retryButton" class="mt-4 px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700 transition duration-150">
+                        Retry
+                    </button>
+                `;
+
+                document.getElementById('retryButton').addEventListener('click', () => {
+                    window.location.reload();
+                });
+            }
+        }
+
+
+        function openModal() {
+            profileEditModal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
+        }
+
+        function closeModal() {
+            profileEditModal.classList.remove('show');
+            document.body.style.overflow = ''; // Re-enable scrolling
+        }
+
+        function updateCharCount() {
+            const maxLength = 150;
+            const currentLength = bioTextarea.value.length;
+            const remaining = maxLength - currentLength;
+            bioCharCount.textContent = remaining;
+
+            if (remaining < 0) {
+                bioCharCount.classList.add('text-red-500');
+            } else {
+                bioCharCount.classList.remove('text-red-500');
+            }
+        }
+        async function handleSubmit() {
+            const profileData = {
+                profileName: document.getElementById('profileName').value.trim(),
+                username: document.getElementById('username').value.trim(),
+                bio: document.getElementById('bio').value.trim(),
+                email: loggedInUserEmail
+            };
+
+            if (!profileData.profileName || !profileData.username) {
+                alert('Profile name and username are required');
+                return;
+            }
+
+            if (profileData.bio.length > 150) {
+                alert('Bio must be 150 characters or less');
+                return;
+            }
+
+            try {
+                console.log('Submitting profile data:', profileData);
+                const response = await fetch("/updateUsername", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(profileData),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    closeModal();
+                } else {
+                    alert(result.message || 'Failed to update profile. Please try again.');
+                }
+
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('Failed to update profile. Please try again.');
+            }
+        }
+
+
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        profileEditModal.addEventListener('click', (event) => {
+            if (event.target === profileEditModal) {
+                closeModal();
+            }
+        });
+        bioTextarea.addEventListener('input', updateCharCount);
+        profileEditForm.addEventListener('submit', handleSubmit);
+
+        updateCharCount();
+
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+
+</html>
